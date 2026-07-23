@@ -31,9 +31,10 @@
  */
 enum gpak_header_compression_algorithm
 {
-	GPAK_HEADER_COMPRESSION_NONE = 0,       /**< No compression. */
+	GPAK_HEADER_COMPRESSION_NONE = 0,         /**< No compression. */
 	GPAK_HEADER_COMPRESSION_DEFLATE = 1 << 0, /**< Deflate compression algorithm. */
-	GPAK_HEADER_COMPRESSION_ZST = 1 << 1     /**< Zstandard (ZST) compression algorithm. */
+	GPAK_HEADER_COMPRESSION_ZST = 1 << 1,     /**< Zstandard (ZST) compression algorithm. */
+	GPAK_HEADER_COMPRESSION_LZ4 = 1 << 2      /**< LZ4 compression algorithm */
 };
 
 /**
