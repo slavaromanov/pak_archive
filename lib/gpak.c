@@ -146,12 +146,14 @@ int _gpak_archivate_file_tree(gpak_t* _pak)
 			long cursor = ftell(_pak->stream_);
 
 			uint32_t _crc32 = 0u;
-			if (_pak->header_.compression_ & GPAK_HEADER_COMPRESSION_DEFLATE)
-				_crc32 = _gpak_compressor_deflate(_pak, _infile, _pak->stream_);
-			else if (_pak->header_.compression_ & GPAK_HEADER_COMPRESSION_ZST)
-				_crc32 = _gpak_compressor_zstd(_pak, _infile, _pak->stream_);
-			else
-				_crc32 = _gpak_compressor_none(_pak, _infile, _pak->stream_);
+            if (_pak->header_.compression_ & GPAK_HEADER_COMPRESSION_DEFLATE)
+                _crc32 = _gpak_compressor_deflate(_pak, _infile, _pak->stream_);
+            else if (_pak->header_.compression_ & GPAK_HEADER_COMPRESSION_ZST)
+                _crc32 = _gpak_compressor_zstd(_pak, _infile, _pak->stream_);
+            else if (_pak->header_.compression_ & GPAK_HEADER_COMPRESSION_LZ4)
+                _crc32 = _gpak_compressor_lz4(_pak, _infile, _pak->stream_);
+            else
+                _crc32 = _gpak_compressor_none(_pak, _infile, _pak->stream_);
 
 			long position = ftell(_pak->stream_);
 			size_t uncompressed_size = ftell(_infile);
@@ -409,12 +411,14 @@ gpak_file_t* gpak_fopen(gpak_t* _pak, const char* _path)
 	// Setting position to file start
 	fseek(_pak->stream_, _file_info->entry_.offset_, SEEK_SET);
 
-	if (_pak->header_.compression_ & GPAK_HEADER_COMPRESSION_DEFLATE)
-		mfile->crc32_ = _gpak_decompressor_inflate(_pak, _pak->stream_, mfile->stream_, compressed_size);
-	else if (_pak->header_.compression_ & GPAK_HEADER_COMPRESSION_ZST)
-		mfile->crc32_ = _gpak_decompressor_zstd(_pak, _pak->stream_, mfile->stream_, compressed_size);
-	else
-		mfile->crc32_ = _gpak_decompressor_none(_pak, _pak->stream_, mfile->stream_, compressed_size);
+    if (_pak->header_.compression_ & GPAK_HEADER_COMPRESSION_DEFLATE)
+        mfile->crc32_ = _gpak_decompressor_inflate(_pak, _pak->stream_, mfile->stream_, compressed_size);
+    else if (_pak->header_.compression_ & GPAK_HEADER_COMPRESSION_ZST)
+        mfile->crc32_ = _gpak_decompressor_zstd(_pak, _pak->stream_, mfile->stream_, compressed_size);
+    else if (_pak->header_.compression_ & GPAK_HEADER_COMPRESSION_LZ4)
+        mfile->crc32_ = _gpak_decompressor_lz4(_pak, _pak->stream_, mfile->stream_, compressed_size);
+    else
+        mfile->crc32_ = _gpak_decompressor_none(_pak, _pak->stream_, mfile->stream_, compressed_size);
 
 	fseek(mfile->stream_, 0, SEEK_SET);
 

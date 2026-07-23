@@ -22,6 +22,9 @@
 
 #define _DICTIONARY_SAMPLE_COUNT 200
 
+#ifndef _WIN32
+#include <lz4frame.h>
+#endif
 
 int get_num_threads() 
 {
@@ -419,4 +422,113 @@ int32_t _gpak_compressor_generate_dictionary(gpak_t* _pak)
 	free(samples);
 
 	return _gpak_make_error(_pak, GPAK_ERROR_OK);
+}
+
+uint32_t _gpak_compressor_lz4(gpak_t* _pak, FILE* _infile, FILE* _outfile)
+{
+#ifdef _WIN32
+    return _gpak_make_error(_pak, GPAK_ERROR_WRITE);
+#else
+    uint32_t _gpak_compressor_lz4(gpak_t* _pak, FILE* _infile, FILE* _outfile)
+    {
+        LZ4F_cctx* cctx;
+        LZ4F_errorCode_t err = LZ4F_createCompressionContext(&cctx, LZ4F_VERSION);
+        if (LZ4F_isError(err)) return _gpak_make_error(_pak, GPAK_ERROR_WRITE);
+
+        size_t const buffInSize = _DEFAULT_BLOCK_SIZE;
+        void* const buffIn = malloc(buffInSize);
+        size_t const buffOutSize = LZ4F_compressBound(buffInSize, NULL) + LZ4F_HEADER_SIZE_MAX + LZ4F_FOOTER_SIZE;
+        void* const buffOut = malloc(buffOutSize);
+
+        fseek(_infile, 0, SEEK_END);
+        size_t _total_size = ftell(_infile);
+        fseek(_infile, 0, SEEK_SET);
+
+        uint32_t _crc32 = crc32(0L, Z_NULL, 0);
+        size_t _total_readed = 0ull;
+
+        // Пишем заголовок фрейма
+        size_t headerSize = LZ4F_compressBegin(cctx, buffOut, buffOutSize, NULL);
+        _fwriteb(buffOut, 1, headerSize, _outfile);
+
+        for (;;)
+        {
+            size_t read = _freadb(buffIn, 1, buffInSize, _infile);
+            if (read == 0) break;
+
+            _total_readed += read;
+            _crc32 = crc32(_crc32, buffIn, read);
+            _gpak_pass_progress(_pak, _total_readed, _total_size, GPAK_STAGE_COMPRESSION);
+
+            size_t compressedSize = LZ4F_compressUpdate(cctx, buffOut, buffOutSize, buffIn, read, NULL);
+            _fwriteb(buffOut, 1, compressedSize, _outfile);
+        }
+
+        size_t footerSize = LZ4F_compressEnd(cctx, buffOut, buffOutSize, NULL);
+        _fwriteb(buffOut, 1, footerSize, _outfile);
+
+        LZ4F_freeCompressionContext(cctx);
+        free(buffIn);
+        free(buffOut);
+
+        return _crc32;
+    }
+#endif
+}
+
+uint32_t _gpak_decompressor_lz4(gpak_t* _pak, FILE* _infile, FILE* _outfile, size_t _read_size)
+{
+#ifdef _WIN32
+    return _gpak_make_error(_pak, GPAK_ERROR_READ);
+#else
+    uint32_t _gpak_decompressor_lz4(gpak_t* _pak, FILE* _infile, FILE* _outfile, size_t _read_size)
+    {
+        LZ4F_dctx* dctx;
+        LZ4F_errorCode_t err = LZ4F_createDecompressionContext(&dctx, LZ4F_VERSION);
+        if (LZ4F_isError(err)) return _gpak_make_error(_pak, GPAK_ERROR_READ);
+
+        size_t const buffInSize = _DEFAULT_BLOCK_SIZE;
+        void* const buffIn = malloc(buffInSize);
+        size_t const buffOutSize = _DEFAULT_BLOCK_SIZE;
+        void* const buffOut = malloc(buffOutSize);
+
+        uint32_t _crc32 = crc32(0L, Z_NULL, 0);
+        size_t bytesRead = 0;
+
+        while (bytesRead < _read_size)
+        {
+            size_t const toRead = (bytesRead + buffInSize <= _read_size) ? buffInSize : (_read_size - bytesRead);
+            size_t read = _freadb(buffIn, 1, toRead, _infile);
+            if (!read) break;
+
+            bytesRead += read;
+            _gpak_pass_progress(_pak, bytesRead, _read_size, GPAK_STAGE_DECOMPRESSION);
+
+            size_t srcSize = read;
+            const void* srcPtr = buffIn;
+
+            while (srcSize > 0)
+            {
+                size_t dstSize = buffOutSize;
+                size_t srcConsumed = srcSize;
+                size_t ret = LZ4F_decompress(dctx, buffOut, &dstSize, srcPtr, &srcConsumed, NULL);
+
+                if (LZ4F_isError(ret)) goto clear;
+
+                _crc32 = crc32(_crc32, buffOut, dstSize);
+                _fwriteb(buffOut, 1, dstSize, _outfile);
+
+                srcPtr = (const char*)srcPtr + srcConsumed;
+                srcSize -= srcConsumed;
+            }
+        }
+
+    clear:
+        LZ4F_freeDecompressionContext(dctx);
+        free(buffIn);
+        free(buffOut);
+
+        return _crc32;
+    }
+#endif
 }

@@ -114,6 +114,18 @@ extern "C" {
 	 */
 	GPAK_API int32_t _gpak_compressor_generate_dictionary(gpak_t* _pak);
 
+	#if defined(__linux__)
+    /**
+     * @brief Compresses the input file using the LZ4 algorithm.
+     */
+    GPAK_API uint32_t _gpak_compressor_lz4(gpak_t* _pak, FILE* _infile, FILE* _outfile);
+
+    /**
+     * @brief Decompresses the input file using the LZ4 algorithm.
+     */
+    GPAK_API uint32_t _gpak_decompressor_lz4(gpak_t* _pak, FILE* _infile, FILE* _outfile, size_t _read_size);
+    #endif
+
 #ifdef __cplusplus
 }
 #endif

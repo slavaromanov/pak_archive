@@ -27,3 +27,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 "${EXTERNALS_PATH}libfmemopen"
 )
 target_link_libraries(${PROJECT_NAME} PRIVATE gpak_externals)
+if(WIN32)
+    target_link_libraries(${PROJECT_NAME} PRIVATE z zstd)
+else()
+    target_link_libraries(${PROJECT_NAME} PRIVATE z zstd lz4)
+endif()
