@@ -12,9 +12,8 @@ extern "C" {
 #include <optional>
 #include <string>
 #include <format>
-
-#define _CRTDBG_MAP_ALLOC
-#include <crtdbg.h>
+#include <vector>
+#include <algorithm>
 
 #define PACKER_VERSION "v1.0"
 
@@ -76,11 +75,6 @@ std::string show_progress_bar(int progress, int total, const std::string& info =
 	return std::format("{}[{}{}] {:.2f}%", info, filled_part, unfilled_part, (static_cast<float>(progress) / total) * 100.0f);
 }
 
-void on_exit()
-{
-	_CrtDumpMemoryLeaks();
-}
-
 void error_handler(const char* filepath, int errcode, void* user_data)
 {
 	std::cerr << "Error in file " << filepath << " with code: " << errcode << std::endl;
@@ -113,11 +107,6 @@ void progress_handler(const char* filepath, size_t done, size_t total, int32_t m
 
 int main(int argc, char** argv)
 {
-	atexit(on_exit);
-
-	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-	_CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_DEBUG);
-
 	gpak_t* _pak{ nullptr };
 	InputParser args(argc, argv);
 

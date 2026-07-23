@@ -1,10 +1,12 @@
 cmake_minimum_required(VERSION 3.8)
-project(packer_tool LANGUAGES CXX)
+# Добавляем язык C, так как ядро библиотеки написано на нем
+project(packer_tool LANGUAGES C CXX)
 
-file(GLOB_RECURSE SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
-file(GLOB_RECURSE HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
+# Собираем пути ко всем исходникам библиотеки gpak
+file(GLOB LIB_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/../lib/*.c")
 
-add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
+# Передаем их компилятору вместе с нашим main.cpp
+add_executable(${PROJECT_NAME} main.cpp ${LIB_SOURCES})
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 set_target_properties(${PROJECT_NAME} PROPERTIES
@@ -12,6 +14,12 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     CXX_EXTENSIONS OFF
 )
 
-target_link_libraries(${PROJECT_NAME} PRIVATE libgpak)
+# Указываем, где искать заголовочные файлы
+target_include_directories(${PROJECT_NAME} PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/../lib
+)
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+# Если библиотека внутри себя использует сжатие zstd и deflate (zlib),
+# нужно прилинковать системные библиотеки для этих алгоритмов
+target_link_libraries(${PROJECT_NAME} PRIVATE z zstd)
