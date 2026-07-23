@@ -9,3 +9,4 @@ CMakeCache.txt
 **/cmake_install.cmake
 lib/external
 lib/liblibgpak.a
+packer_tool/packer_tool

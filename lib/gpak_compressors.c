@@ -437,7 +437,12 @@ uint32_t _gpak_compressor_lz4(gpak_t* _pak, FILE* _infile, FILE* _outfile)
 
         size_t const buffInSize = _DEFAULT_BLOCK_SIZE;
         void* const buffIn = malloc(buffInSize);
+
+        #ifndef _WIN32
+        size_t const buffOutSize = LZ4F_compressBound(buffInSize, NULL) + LZ4F_HEADER_SIZE_MAX + 8;
+        #else
         size_t const buffOutSize = LZ4F_compressBound(buffInSize, NULL) + LZ4F_HEADER_SIZE_MAX + LZ4F_FOOTER_SIZE;
+        #endif
         void* const buffOut = malloc(buffOutSize);
 
         fseek(_infile, 0, SEEK_END);
