@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.8)
 
+project(pak_archive LANGUAGES C CXX)
 option(BUILD_PACKER_TOOL "Build gpak packer tool" OFF)
 option(BUILD_TESTS "Build gpak tests" OFF)
 

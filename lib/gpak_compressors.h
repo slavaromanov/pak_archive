@@ -106,6 +106,9 @@ extern "C" {
 	 */
 	GPAK_API uint32_t _gpak_decompressor_zstd(gpak_t* _pak, FILE* _infile, FILE* _outfile, size_t _read_size);
 
+	GPAK_API uint32_t _gpak_compressor_lz4(gpak_t* _pak, FILE* _infile, FILE* _outfile);
+    GPAK_API uint32_t _gpak_decompressor_lz4(gpak_t* _pak, FILE* _infile, FILE* _outfile, size_t _read_size);
+
 	/**
 	 * @brief Generates a compression dictionary for the specified G-PAK archive.
 	 * This function generates a compression dictionary for the specified G-PAK archive, which can be used to improve the compression ratio for certain algorithms.
